@@ -1,7 +1,6 @@
 import streamlit as st
 import pickle
 import requests
-import pandas as pd
 
 # ---------- Page config ----------
 st.set_page_config(page_title="Movie Recommender", page_icon="🎬", layout="wide")
@@ -74,16 +73,23 @@ div[data-baseweb="select"] > div:hover {
     transform: translateY(0px) scale(0.98);
 }
 
-/* Responsive poster grid — auto-reflows based on screen width */
+/* Responsive poster grid — explicit breakpoints per screen size */
 .poster-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 180px));
+    grid-template-columns: repeat(5, minmax(0, 180px));
     justify-content: center;
     gap: 16px;
     margin-top: 20px;
 }
 
-/* On small phones, cap at 2 per row so posters aren't tiny */
+/* Tablets / narrow laptops */
+@media (max-width: 900px) {
+    .poster-grid {
+        grid-template-columns: repeat(3, minmax(0, 170px));
+    }
+}
+
+/* Phones */
 @media (max-width: 480px) {
     .poster-grid {
         grid-template-columns: repeat(2, minmax(0, 150px));
@@ -161,14 +167,8 @@ if st.button('Recommend'):
     with st.spinner('Finding movies you\'ll love...'):
         names, posters = recommend(option)
 
-    cards_html = "".join(
-        f"""
-        <div class="movie-card">
-            <img src="{posters[i]}" />
-            <div class="movie-title">{names[i]}</div>
-        </div>
-        """
-        for i in range(5)
-    )
+    cards_html = ""
+    for i in range(5):
+        cards_html += f'<div class="movie-card"><img src="{posters[i]}" /><div class="movie-title">{names[i]}</div></div>'
 
     st.markdown(f'<div class="poster-grid">{cards_html}</div>', unsafe_allow_html=True)
