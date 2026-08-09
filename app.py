@@ -1,8 +1,7 @@
 import streamlit as st
 import pickle
 import requests
-import numpy as np
-
+import pandas as pd
 
 # ---------- Page config ----------
 st.set_page_config(page_title="Movie Recommender", page_icon="🎬", layout="wide")
@@ -11,7 +10,6 @@ st.set_page_config(page_title="Movie Recommender", page_icon="🎬", layout="wid
 movies = pickle.load(open('movies.pkl', 'rb'))
 similarity = pickle.load(open('similarity.pkl', 'rb'))
 movies_list = movies['title'].values
-
 
 
 # ---------- Custom CSS ----------
@@ -76,6 +74,23 @@ div[data-baseweb="select"] > div:hover {
     transform: translateY(0px) scale(0.98);
 }
 
+/* Responsive poster grid — auto-reflows based on screen width */
+.poster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 180px));
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+/* On small phones, cap at 2 per row so posters aren't tiny */
+@media (max-width: 480px) {
+    .poster-grid {
+        grid-template-columns: repeat(2, minmax(0, 150px));
+        gap: 12px;
+    }
+}
+
 /* Movie poster cards */
 .movie-card {
     background-color: #101d38;
@@ -93,13 +108,15 @@ div[data-baseweb="select"] > div:hover {
 .movie-card img {
     border-radius: 10px;
     width: 100%;
+    height: auto;
+    display: block;
     margin-bottom: 8px;
 }
 .movie-title {
     font-size: 14px;
     font-weight: 600;
     color: #e8ecf4;
-    min-height: 40px;
+    line-height: 1.3;
 }
 
 </style>
@@ -108,7 +125,7 @@ div[data-baseweb="select"] > div:hover {
 
 # ---------- Poster fetch ----------
 def fetch_poster(movie_id):
-    api_key = '29749ce592cf9e1f298464990c63752e'
+    api_key = st.secrets["TMDB_API_KEY"]
     url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=en-US'
     response = requests.get(url)
     data = response.json()
@@ -135,7 +152,7 @@ def recommend(movie):
 
 
 # ---------- UI ----------
-st.title("Movie Recommender System")
+st.title("🎬 Movie Recommender System")
 st.write("Pick a movie you like, and get 5 smart recommendations.")
 
 option = st.selectbox('Type or select a movie', movies_list)
@@ -144,12 +161,14 @@ if st.button('Recommend'):
     with st.spinner('Finding movies you\'ll love...'):
         names, posters = recommend(option)
 
-    cols = st.columns(5)
-    for i in range(5):
-        with cols[i]:
-            st.markdown(f"""
-                <div class="movie-card">
-                    <img src="{posters[i]}" />
-                    <div class="movie-title">{names[i]}</div>
-                </div>
-            """, unsafe_allow_html=True)
+    cards_html = "".join(
+        f"""
+        <div class="movie-card">
+            <img src="{posters[i]}" />
+            <div class="movie-title">{names[i]}</div>
+        </div>
+        """
+        for i in range(5)
+    )
+
+    st.markdown(f'<div class="poster-grid">{cards_html}</div>', unsafe_allow_html=True)
